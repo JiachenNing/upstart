@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from uuid import UUID
 import crud, models, schemas
 from database import SessionLocal, engine
 
@@ -25,6 +26,7 @@ def root():
         "message": "Full-Stack Web App API",
         "docs": "/docs",
         "submissions": "/submissions/",
+        "polls": "/polls",
     }
 
 
@@ -52,3 +54,23 @@ def remove_submission(submission_id: int, db: Session = Depends(get_db)):
     if not deleted:
         raise HTTPException(status_code=404, detail="Submission not found.")
     return {"message": "Submission deleted successfully."}
+
+
+@app.post("/polls", response_model=schemas.Poll)
+def create_poll(poll: schemas.PollCreate, db: Session = Depends(get_db)):
+    if len(poll.options) == 0:
+        raise HTTPException(status_code=400, detail="At least one option is required.")
+    return crud.create_poll(db=db, poll=poll)
+
+
+@app.get("/polls", response_model=list[schemas.Poll])
+def read_polls(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    return crud.get_polls(db=db, skip=skip, limit=limit)
+
+
+@app.get("/polls/{poll_id}", response_model=schemas.Poll)
+def read_poll(poll_id: UUID, db: Session = Depends(get_db)):
+    poll = crud.get_poll(db=db, poll_id=poll_id)
+    if poll is None:
+        raise HTTPException(status_code=404, detail="Poll not found.")
+    return poll

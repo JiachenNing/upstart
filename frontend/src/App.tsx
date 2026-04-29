@@ -1,194 +1,207 @@
-import { useEffect, useState } from 'react';
-import { Submission, fetchSubmissions, createSubmission, deleteSubmission } from './api';
+import { FormEvent, useEffect, useState } from 'react';
+import { Poll, createPoll, fetchPollById, fetchPolls } from './api';
 
 function App() {
-  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [polls, setPolls] = useState<Poll[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  const [name, setName] = useState('');
-  const [userName, setUserName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [gender, setGender] = useState('');
-  const [message, setMessage] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [deletingSubmissionId, setDeletingSubmissionId] = useState<number | null>(null);
-  const isFormComplete = [name, email, phone, gender, message].every(field => field.trim() !== '');
 
-  const loadSubmissions = async () => {
+  const [isCreating, setIsCreating] = useState(false);
+  const [question, setQuestion] = useState('');
+  const [options, setOptions] = useState<string[]>(['', '']);
+  const [createBy, setCreateBy] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const [selectedPoll, setSelectedPoll] = useState<Poll | null>(null);
+  const [selectedOptionId, setSelectedOptionId] = useState<number | null>(null);
+
+  const isFormComplete =
+    question.trim() !== '' &&
+    options.every((optionText) => optionText.trim() !== '');
+
+  const loadPolls = async () => {
     setLoading(true);
     try {
-      const data = await fetchSubmissions();
-      setSubmissions(data);
+      const data = await fetchPolls();
+      setPolls(data);
     } catch (error) {
-      console.error('Failed to fetch submissions:', error);
+      console.error('Failed to fetch polls:', error);
     }
     setLoading(false);
   };
 
   useEffect(() => {
-    loadSubmissions();
+    loadPolls();
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleOptionInputChange = (index: number, value: string) => {
+    setOptions((prevOptions) => prevOptions.map((optionText, i) => (i === index ? value : optionText)));
+  };
+
+  const resetForm = () => {
+    setQuestion('');
+    setOptions(['', '']);
+    setCreateBy('');
+  };
+
+  const handleAddMoreOption = () => {
+    setOptions((prevOptions) => [...prevOptions, '']);
+  };
+
+  const handleCreatePoll = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!isFormComplete) return;
     setSubmitting(true);
+
     try {
-      await createSubmission({ name, userName: userName.trim() || undefined, email, phone, gender, message });
-      setName('');
-      setUserName('');
-      setEmail('');
-      setPhone('');
-      setGender('');
-      setMessage('');
-      await loadSubmissions();
-      // Optionally show a success toast here
+      await createPoll({
+        question: question.trim(),
+        options: options.map((optionText) => optionText.trim()),
+        create_by: createBy.trim() || undefined,
+      });
+      setIsCreating(false);
+      resetForm();
+      await loadPolls();
     } catch (error) {
-      console.error('Failed to create submission:', error);
+      console.error('Failed to create poll:', error);
     }
+
     setSubmitting(false);
   };
 
-  const handleDeleteSubmission = async (submissionId: number) => {
-    const shouldDelete = window.confirm('Delete this submission? This action cannot be undone.');
-    if (!shouldDelete) return;
-
-    setDeletingSubmissionId(submissionId);
+  const handleOpenPoll = async (pollId: string) => {
     try {
-      await deleteSubmission(submissionId);
-      setSubmissions((prev) => prev.filter((submission) => submission.id !== submissionId));
+      const poll = await fetchPollById(pollId);
+      setSelectedPoll(poll);
+      setSelectedOptionId(null);
     } catch (error) {
-      console.error('Failed to delete submission:', error);
+      console.error('Failed to fetch poll details:', error);
     }
-    setDeletingSubmissionId(null);
   };
 
   return (
     <div className="app-container">
-      <main className="main-content">
-        <section className="form-section">
-          <div className="glass-card">
-            <h2>Submit Form</h2>
-            <form onSubmit={handleSubmit}>
-              <div className="input-group">
-                <input 
-                  type="text" 
-                  id="name"
-                  placeholder=" "
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  required 
-                />
-                <label htmlFor="name">Full Name</label>
-              </div>
+      <header className="page-header">
+        <h1>Polls</h1>
+        {!selectedPoll && (
+          <button
+            type="button"
+            className="primary-btn"
+            onClick={() => setIsCreating((prev) => !prev)}
+          >
+            {isCreating ? 'Cancel' : 'Add'}
+          </button>
+        )}
+      </header>
 
-              <div className="input-group">
-                <input 
-                  type="text" 
-                  id="userName"
-                  placeholder=" "
-                  value={userName}
-                  onChange={e => setUserName(e.target.value)}
-                />
-                <label htmlFor="userName">UserName</label>
-              </div>
+      {isCreating && !selectedPoll && (
+        <section className="panel">
+          <h2>Create New Poll</h2>
+          <form onSubmit={handleCreatePoll} className="poll-form">
+            <label className="field">
+              <span>Question</span>
+              <input
+                type="text"
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                placeholder="Enter poll question"
+                required
+              />
+            </label>
 
-              <div className="input-group">
-                <input 
-                  type="email" 
-                  id="email"
-                  placeholder=" "
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  required 
-                />
-                <label htmlFor="email">Email Address</label>
-              </div>
-
-              <div className="input-group">
+            {options.map((optionText, index) => (
+              <label className="field" key={index}>
+                <span>Option {index + 1}</span>
                 <input
-                  type="tel"
-                  id="phone"
-                  placeholder=" "
-                  value={phone}
-                  onChange={e => setPhone(e.target.value)}
+                  type="text"
+                  value={optionText}
+                  onChange={(e) => handleOptionInputChange(index, e.target.value)}
+                  placeholder={`Enter option ${index + 1}`}
                   required
                 />
-                <label htmlFor="phone">Phone Number</label>
-              </div>
+              </label>
+            ))}
+            <button
+              type="button"
+              className="secondary-btn"
+              onClick={handleAddMoreOption}
+            >
+              Add More
+            </button>
 
-              <div className="input-group">
-                <select
-                  id="gender"
-                  value={gender}
-                  onChange={e => setGender(e.target.value)}
-                  required
-                >
-                  <option value="" disabled>Select Gender</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Non-binary">Non-binary</option>
-                  <option value="Prefer not to say">Prefer not to say</option>
-                </select>
-              </div>
+            <label className="field">
+              <span>Created By (optional)</span>
+              <input
+                type="text"
+                value={createBy}
+                onChange={(e) => setCreateBy(e.target.value)}
+                placeholder="Your name"
+              />
+            </label>
 
-              <div className="input-group">
-                <textarea 
-                  id="message"
-                  placeholder=" "
-                  rows={4}
-                  value={message}
-                  onChange={e => setMessage(e.target.value)}
-                  required 
-                />
-                <label htmlFor="message">Your Message</label>
-              </div>
-
-              <button type="submit" disabled={submitting || !isFormComplete} className="submit-btn">
-                {submitting ? 'Sending...' : 'Send Message'}
-                <span className="btn-glow"></span>
-              </button>
-            </form>
-          </div>
+            <button type="submit" className="primary-btn" disabled={submitting || !isFormComplete}>
+              {submitting ? 'Creating...' : 'Submit'}
+            </button>
+          </form>
         </section>
+      )}
 
-        <section className="data-section">
-          <h2>Recent Submissions</h2>
-          <div className="submissions-grid">
+      <main className="main-content">
+        {!selectedPoll ? (
+          <section className="panel">
+            <h2>All Polls</h2>
             {loading ? (
-              <div className="loader"></div>
-            ) : submissions.length === 0 ? (
-              <p className="empty-state">No submissions yet. Be the first!</p>
+              <p className="empty-state">Loading polls...</p>
+            ) : polls.length === 0 ? (
+              <p className="empty-state">No polls yet. Click Add to create one.</p>
             ) : (
-              submissions.map(sub => (
-                <div key={sub.id} className="submission-card">
+              <div className="poll-grid">
+                {polls.map((poll) => (
                   <button
+                    key={poll.poll_id}
                     type="button"
-                    className="delete-submission-btn"
-                    aria-label={`Delete submission ${sub.id}`}
-                    title="Delete submission"
-                    disabled={deletingSubmissionId === sub.id}
-                    onClick={() => void handleDeleteSubmission(sub.id)}
+                    className="poll-card"
+                    onClick={() => void handleOpenPoll(poll.poll_id)}
                   >
-                    {deletingSubmissionId === sub.id ? '...' : '\u00d7'}
+                    <h3>{poll.question}</h3>
+                    <p>{poll.options.length} options</p>
                   </button>
-                  <div className="submission-header">
-                    <span className="avatar">{sub.name.charAt(0).toUpperCase()}</span>
-                    <div>
-                      <h3>{sub.name}</h3>
-                      <div>{sub.userName ?? 'Not provided'}</div>
-                      <span className="email">{sub.email}</span>
-                      <div>{sub.phone}</div>
-                      <div>{sub.gender ?? 'Not provided'}</div>
-                    </div>
-                  </div>
-                  <p className="message">{sub.message}</p>
-                </div>
-              ))
+                ))}
+              </div>
             )}
-          </div>
-        </section>
+          </section>
+        ) : (
+          <section className="panel">
+            <div className="detail-header">
+              <button type="button" className="secondary-btn" onClick={() => setSelectedPoll(null)}>
+                Back to Polls
+              </button>
+              <h2>Poll Detail</h2>
+            </div>
+            <h3 className="poll-question">{selectedPoll.question}</h3>
+            <div className="option-list">
+              {selectedPoll.options.map((option) => (
+                <label key={option.option_id} className="option-item">
+                  <input
+                    type="radio"
+                    name="selected-option"
+                    value={option.option_id}
+                    checked={selectedOptionId === option.option_id}
+                    onChange={() => setSelectedOptionId(option.option_id)}
+                  />
+                  <span>{option.option_text}</span>
+                </label>
+              ))}
+            </div>
+            <button
+              type="button"
+              className="primary-btn vote-btn"
+              disabled={selectedOptionId === null}
+              onClick={() => window.alert('Vote endpoint is not implemented yet.')}
+            >
+              Vote
+            </button>
+          </section>
+        )}
       </main>
     </div>
   );
