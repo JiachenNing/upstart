@@ -6,6 +6,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   
   const [name, setName] = useState('');
+  const [userName, setUserName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [gender, setGender] = useState('');
@@ -34,8 +35,9 @@ function App() {
     if (!isFormComplete) return;
     setSubmitting(true);
     try {
-      await createSubmission({ name, email, phone, gender, message });
+      await createSubmission({ name, userName: userName.trim() || undefined, email, phone, gender, message });
       setName('');
+      setUserName('');
       setEmail('');
       setPhone('');
       setGender('');
@@ -79,6 +81,17 @@ function App() {
                   required 
                 />
                 <label htmlFor="name">Full Name</label>
+              </div>
+
+              <div className="input-group">
+                <input 
+                  type="text" 
+                  id="userName"
+                  placeholder=" "
+                  value={userName}
+                  onChange={e => setUserName(e.target.value)}
+                />
+                <label htmlFor="userName">UserName</label>
               </div>
 
               <div className="input-group">
@@ -164,6 +177,7 @@ function App() {
                     <span className="avatar">{sub.name.charAt(0).toUpperCase()}</span>
                     <div>
                       <h3>{sub.name}</h3>
+                      <div>{sub.userName ?? 'Not provided'}</div>
                       <span className="email">{sub.email}</span>
                       <div>{sub.phone}</div>
                       <div>{sub.gender ?? 'Not provided'}</div>

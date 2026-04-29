@@ -3,6 +3,7 @@ from typing import Optional
 
 class SubmissionBase(BaseModel):
     name: str
+    userName: Optional[str] = None
     email: str
     phone: str
     gender: Optional[str] = None

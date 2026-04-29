@@ -6,6 +6,7 @@ class Submission(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
+    userName = Column(String, nullable=True, index=True)
     email = Column(String, index=True)
     phone = Column(String, index=True)
     gender = Column(String, nullable=True)

@@ -7,6 +7,7 @@ def get_submissions(db: Session, skip: int = 0, limit: int = 100):
 def create_submission(db: Session, submission: schemas.SubmissionCreate):
     db_submission = models.Submission(
         name=submission.name, 
+        userName=submission.userName,
         email=submission.email, 
         phone=submission.phone,
         gender=submission.gender,

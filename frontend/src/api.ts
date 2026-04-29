@@ -3,6 +3,7 @@ const API_URL = 'http://127.0.0.1:8000';
 export interface Submission {
   id: number;
   name: string;
+  userName: string | null;
   email: string;
   phone: string;
   gender: string | null;
@@ -11,6 +12,7 @@ export interface Submission {
 
 export interface SubmissionCreate {
   name: string;
+  userName?: string;
   email: string;
   phone: string;
   gender: string;
