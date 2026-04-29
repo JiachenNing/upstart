@@ -44,3 +44,11 @@ def create_submission(submission: schemas.SubmissionCreate, db: Session = Depend
 def read_submissions(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     submissions = crud.get_submissions(db, skip=skip, limit=limit)
     return submissions
+
+
+@app.delete("/submissions/{submission_id}", response_model=schemas.MessageResponse)
+def remove_submission(submission_id: int, db: Session = Depends(get_db)):
+    deleted = crud.delete_submission(db=db, submission_id=submission_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Submission not found.")
+    return {"message": "Submission deleted successfully."}

@@ -16,3 +16,13 @@ def create_submission(db: Session, submission: schemas.SubmissionCreate):
     db.commit()
     db.refresh(db_submission)
     return db_submission
+
+
+def delete_submission(db: Session, submission_id: int):
+    db_submission = db.query(models.Submission).filter(models.Submission.id == submission_id).first()
+    if db_submission is None:
+        return False
+
+    db.delete(db_submission)
+    db.commit()
+    return True

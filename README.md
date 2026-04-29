@@ -18,6 +18,10 @@ source venv/bin/activate
 alembic upgrade head
 uvicorn main:app --reload
 ```
+```bash
+cd frontend
+npm run dev
+```
 
 ## Initial setup
 ```bash

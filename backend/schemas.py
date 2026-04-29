@@ -16,3 +16,7 @@ class Submission(SubmissionBase):
 
     class Config:
         from_attributes = True
+
+
+class MessageResponse(BaseModel):
+    message: str

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Submission, fetchSubmissions, createSubmission } from './api';
+import { Submission, fetchSubmissions, createSubmission, deleteSubmission } from './api';
 
 function App() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -11,6 +11,7 @@ function App() {
   const [gender, setGender] = useState('');
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [deletingSubmissionId, setDeletingSubmissionId] = useState<number | null>(null);
   const isFormComplete = [name, email, phone, gender, message].every(field => field.trim() !== '');
 
   const loadSubmissions = async () => {
@@ -45,6 +46,20 @@ function App() {
       console.error('Failed to create submission:', error);
     }
     setSubmitting(false);
+  };
+
+  const handleDeleteSubmission = async (submissionId: number) => {
+    const shouldDelete = window.confirm('Delete this submission? This action cannot be undone.');
+    if (!shouldDelete) return;
+
+    setDeletingSubmissionId(submissionId);
+    try {
+      await deleteSubmission(submissionId);
+      setSubmissions((prev) => prev.filter((submission) => submission.id !== submissionId));
+    } catch (error) {
+      console.error('Failed to delete submission:', error);
+    }
+    setDeletingSubmissionId(null);
   };
 
   return (
@@ -135,6 +150,16 @@ function App() {
             ) : (
               submissions.map(sub => (
                 <div key={sub.id} className="submission-card">
+                  <button
+                    type="button"
+                    className="delete-submission-btn"
+                    aria-label={`Delete submission ${sub.id}`}
+                    title="Delete submission"
+                    disabled={deletingSubmissionId === sub.id}
+                    onClick={() => void handleDeleteSubmission(sub.id)}
+                  >
+                    {deletingSubmissionId === sub.id ? '...' : '\u00d7'}
+                  </button>
                   <div className="submission-header">
                     <span className="avatar">{sub.name.charAt(0).toUpperCase()}</span>
                     <div>

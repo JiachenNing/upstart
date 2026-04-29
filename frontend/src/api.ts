@@ -38,3 +38,12 @@ export const createSubmission = async (submission: SubmissionCreate): Promise<Su
   }
   return response.json();
 };
+
+export const deleteSubmission = async (submissionId: number): Promise<void> => {
+  const response = await fetch(`${API_URL}/submissions/${submissionId}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) {
+    throw new Error('Network response was not ok');
+  }
+};
